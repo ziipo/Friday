@@ -1,4 +1,4 @@
-"""PDF ingestor: store raw PDF + extract text via pdfplumber."""
+"""PDF ingestor: stage raw PDF + extracted text."""
 from __future__ import annotations
 
 import hashlib
@@ -9,7 +9,7 @@ from pathlib import Path
 import pdfplumber
 
 from lib import paths
-from lib.archive_record import make_artifact, write_archive_record
+from lib.archive_record import make_artifact
 from lib.ids import archive_id
 from lib.logging import log_event
 from lib.protocol import CandidateRecord, Provenance
@@ -27,7 +27,6 @@ def _content_hash(path: Path) -> str:
 
 
 def _extract_text(pdf_path: Path) -> tuple[str, str | None]:
-    """Returns (full_text, title_guess)."""
     parts: list[str] = []
     title: str | None = None
     with pdfplumber.open(str(pdf_path)) as pdf:
@@ -53,17 +52,17 @@ def ingest_path(path: Path) -> list[CandidateRecord]:
     clean_dir = paths.ARCHIVE_CLEAN / arc_id
     rendered_dir.mkdir(parents=True, exist_ok=True)
     clean_dir.mkdir(parents=True, exist_ok=True)
-
-    raw_dst = rendered_dir / path.name
-    shutil.copy2(path, raw_dst)
+    shutil.copy2(path, rendered_dir / path.name)
 
     text, title = _extract_text(path)
-    text_dst = clean_dir / (path.stem + ".txt")
-    text_dst.write_text(text, encoding="utf-8")
+    (clean_dir / (path.stem + ".txt")).write_text(text, encoding="utf-8")
 
     candidate = CandidateRecord(
         source_type="pdf",
         captured_via="watcher",
+        arc_id=arc_id,
+        seed=seed,
+        captured_at=captured_at,
         canonical_url=None,
         title=title or path.stem,
         provenance=Provenance(
@@ -77,9 +76,6 @@ def ingest_path(path: Path) -> list[CandidateRecord]:
         ],
         extra={"sha256": seed.split("::", 1)[1]},
     )
-    written_id, record_path = write_archive_record(candidate, captured_at=captured_at, seed=seed)
-    assert written_id == arc_id
-    log_event("scribe.pdf", "archive_record.written",
-              arc_id=arc_id, source=str(path), record_path=str(record_path),
-              chars=len(text))
+    log_event("scribe.pdf", "staged",
+              arc_id=arc_id, source=str(path), chars=len(text))
     return [candidate]

@@ -30,10 +30,17 @@ class Artifact:
 
 @dataclass
 class CandidateRecord:
-    """A pre-archive record, returned by ingestors. The archive_record writer turns this
-    into an on-disk archive_record .md + moves artifacts into Archive/{Rendered,Clean}/."""
+    """A pre-archive record, returned by ingestors.
+
+    Ingestors stage artifacts on disk under Archive/{Rendered,Clean}/{arc_id}/
+    and return CandidateRecords carrying the arc_id seed and captured_at so the
+    pipeline can reproduce the exact same arc_id when writing the record.
+    """
     source_type: str                     # "web" | "gdrive" | "gcal" | "slack" | "email" | "markdown" | "pdf"
     captured_via: str                    # "watcher" | "poll" | "manual"
+    arc_id: str = ""                     # set by ingestor; pipeline writes record under this id
+    seed: str = ""                       # seed used to derive arc_id (URL or content-hash)
+    captured_at: datetime | None = None  # set by ingestor; pipeline reuses for record write
     canonical_url: str | None = None
     title: str | None = None
     one_line_summary: str | None = None

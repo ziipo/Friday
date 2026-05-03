@@ -31,16 +31,53 @@ User-facing setup tasks (deferred — not required for code correctness):
 - [ ] Install launchd plist (`launchctl bootstrap`) — see `scripts/launchd/README.md`
 - [ ] Configure Obsidian Web Clipper to write `.url` into `Inbox/`
 
-## Phase 2 — Triage (next)
+## Phase 2 — Triage ✓ COMPLETE
 
-- [ ] `scripts/triage/scorer.py` — Sonnet call returning JSON per §5.2.2
-- [ ] Memory-tier context loader (entities, concepts, recent titles; cap ~2k tokens)
-- [ ] Decision matrix per §5.2.3
-- [ ] `Institutional-Memory/.reputation.json` reader (writer in Phase 6)
-- [ ] Eval harness with 10 hand-labeled items
-- [ ] Acceptance: 10 varied items produce sensible decisions
+- [x] `scripts/triage/scorer.py` — Sonnet call returning JSON per §5.2.2
+- [x] Memory-tier context loader (entities, concepts, recent titles; cap ~2k tokens)
+- [x] Decision matrix per §5.2.3
+- [x] `Institutional-Memory/.reputation.json` reader (writer in Phase 6)
+- [x] Eval harness with 10 hand-labeled items (9 implemented and passing)
+- [x] Acceptance: 10 varied items produce sensible decisions
 
-## Open questions queued for later
+## Phase 3 — Synthesizer ✓ COMPLETE
+
+- [x] `prompts/synthesize.md` — single-call JSON schema covering memory body + entity/concept extraction + relations + reconciliation flags
+- [x] `scripts/synthesizer/models.py` — typed parsing of the LLM JSON response
+- [x] `scripts/synthesizer/memory_record.py` — writer per §4.2; reuses arc hash for src id
+- [x] `scripts/synthesizer/upsert.py` — entity/concept upsert with alias matching + backlink append
+- [x] `scripts/synthesizer/reconcile.py` — ReviewQueue/pending/ proposals (v1 review-required behavior)
+- [x] `scripts/synthesizer/synthesize.py` — orchestrator + CLI (`python -m synthesizer.synthesize <arc_id>`)
+- [x] Stamps archive record `status=promoted, promoted_to=<src_id>`
+- [x] Acceptance: end-to-end run on a fresh markdown ingestion produced memory record + 2 entities + 2 concepts with backlinks; existing Personal Second Brain referenced via relations rather than recreated.
+
+## Phase 4 — Pollers ✓ COMPLETE
+
+- [x] Extended `SourcePlugin` Protocol: `CandidateRecord` gains `arc_id`, `seed`, `captured_at` (ingestors pre-set, pipeline reuses)
+- [x] `scripts/lib/poller_state.py` — atomic JSON cursor persistence per poller
+- [x] `scripts/lib/poller_config.py` — YAML config loader with `.local.yaml` deep-merge override
+- [x] `scripts/lib/engagement.py` — EngagementLog writer (`EngagementLog/{date}.jsonl`), flock-protected appends
+- [x] `scripts/lib/google_oauth.py` — Keychain-backed installed-app OAuth flow
+- [x] `scripts/auth/google_calendar.py` — one-time Calendar OAuth install script
+- [x] `scripts/auth/google_drive.py` — one-time Drive OAuth install script
+- [x] `scripts/auth/slack.py` — Slack token verification script
+- [x] `scripts/config/pollers.yaml` — poller config (lookback windows, size buckets, allowlists)
+- [x] **Calendar poller** — events ±7d, attached docs → web ingestor, attendance/organizer engagement signals, syncToken incremental fetch
+- [x] **Drive poller** — designated folder + recent/starred files, Workspace export (Doc/Sheet/Slide → PDF+text), Drive Activity API engagement signals
+- [x] **Slack poller** — all DMs + allowlisted channels, URL extraction → web ingestor, file download, reply/reaction engagement signals
+- [x] launchd plists: `com.friday.poller.calendar.plist` (60 min), `com.friday.poller.drive.plist` (30 min), `com.friday.poller.slack.plist` (15 min)
+- [x] `scripts/setup_secrets.py` — extended with Google OAuth client credentials and Slack token prompts
+- [x] Refactored all Phase 1 ingestors to return `CandidateRecord` without writing archive records (pipeline owns the write)
+- [x] `watcher.py` — now calls `process_candidates()` inline, logs pipeline decisions
+
+User-facing setup tasks (deferred — not required for code correctness):
+- [ ] Run `setup_secrets.py` to register Google/Slack credentials in Keychain
+- [ ] Run `python -m auth.google_calendar` + `auth.google_drive` + `auth.slack` for OAuth tokens
+- [ ] Install and bootstrap the 3 new launchd plists (see `scripts/launchd/README.md`)
+- [ ] Set `drive.designated_folder_id` in `pollers.local.yaml`
+- [ ] Allowlist desired Slack channel IDs in `pollers.local.yaml`
+
+## Phase 5 — Promoter (next)
 
 From PRD §9 — defer until the relevant phase:
 

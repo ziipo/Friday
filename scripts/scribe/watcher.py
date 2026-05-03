@@ -77,6 +77,8 @@ def _move_with_collision_safety(src: Path, dst_dir: Path) -> Path:
 
 
 def process_file(path: Path, ingestors: dict[str, Callable]) -> None:
+    from scribe.pipeline import process_candidates
+
     ext = path.suffix.lower()
     ingestor = ingestors.get(ext)
     if ingestor is None:
@@ -90,6 +92,9 @@ def process_file(path: Path, ingestors: dict[str, Callable]) -> None:
             log_event("scribe.watcher", "ingest.unsettled", path=str(path))
             return  # Skip; the next event will re-trigger.
         candidates = ingestor(path)
+        results = process_candidates(candidates)
+        summary = ", ".join(f"{r.get('arc_id') or 'rejected'}:{r['decision']}" for r in results)
+        log_event("scribe.watcher", "pipeline.ok", path=str(path), results=summary)
     except Exception as exc:
         log_event("scribe.watcher", "ingest.error",
                   path=str(path), error=type(exc).__name__, message=str(exc))

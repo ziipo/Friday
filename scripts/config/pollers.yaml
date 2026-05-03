@@ -1,0 +1,40 @@
+# Friday poller configuration. Editable without code changes.
+# Local overrides go in pollers.local.yaml (gitignored — same shape, deep-merged).
+
+calendar:
+  # Lookback / lookahead in days for events.list.
+  lookback_days: 7
+  lookahead_days: 7
+  # Calendars to scan. "primary" is the user's default calendar; add others by ID.
+  calendar_ids:
+    - primary
+  # PTO ranges suppress did_attend signals. ISO date strings (inclusive).
+  pto_ranges: []
+  # Meeting-size buckets for engagement signal weighting (PRD §5.1.5).
+  small_meeting_max: 4
+  medium_meeting_max: 8
+
+drive:
+  # Files dropped here are ingested unconditionally (no relevance gate).
+  designated_folder_id: null  # e.g. "1aBcDe…" — set in pollers.local.yaml
+  # Lookback for "files I created/modified recently" sweep.
+  recent_lookback_days: 1
+  # Page-token TTL safety: if Activity API rejects a token, fall back to a fresh list.
+  activity_lookback_hours: 24
+  # MimeTypes to download (otherwise URL-forward).
+  download_mimetypes:
+    - application/vnd.google-apps.document
+    - application/vnd.google-apps.spreadsheet
+    - application/vnd.google-apps.presentation
+    - application/pdf
+    - text/plain
+    - text/markdown
+
+slack:
+  # Channels (by ID, e.g. "C0123ABC") to scan in addition to all DMs.
+  # Allowlist only — fail-safe to off per PRD §6.3.
+  allowlisted_channels: []
+  # Lookback for first run (after that, last_ts cursor takes over).
+  initial_lookback_hours: 24
+  # Engagement signal lookback per run.
+  engagement_lookback_hours: 24

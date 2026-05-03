@@ -24,6 +24,34 @@ PROMPTS = {
         "OpenRouter API key",
         "Find or create one at https://openrouter.ai/keys",
     ),
+    # Phase 4 — Google OAuth client credentials. Refresh tokens are obtained
+    # via `python -m auth.google_<service>` after these are set.
+    "google.calendar.client_id": (
+        "Google Calendar OAuth client ID",
+        "Create a 'Desktop app' OAuth client in https://console.cloud.google.com/apis/credentials",
+    ),
+    "google.calendar.client_secret": (
+        "Google Calendar OAuth client secret",
+        "Same OAuth client as above",
+    ),
+    "google.drive.client_id": (
+        "Google Drive OAuth client ID",
+        "Separate OAuth client (least privilege per PRD §6.1)",
+    ),
+    "google.drive.client_secret": (
+        "Google Drive OAuth client secret",
+        "Same OAuth client as above",
+    ),
+    # Phase 4 — Slack tokens. The bot token covers most poller reads;
+    # search.messages requires a user token (PRD §5.1.4 risk note).
+    "slack.bot_token": (
+        "Slack bot token (xoxb-…)",
+        "OAuth & Permissions page of your Slack app",
+    ),
+    "slack.user_token": (
+        "Slack user token (xoxp-…)",
+        "Required for search.messages (@-mention scan); user OAuth on the same app",
+    ),
 }
 
 

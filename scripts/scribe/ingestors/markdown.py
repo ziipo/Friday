@@ -1,4 +1,4 @@
-"""Markdown ingestor: copy .md file into Archive/Clean/, preserve frontmatter."""
+"""Markdown ingestor: stage .md into Archive/Clean/, preserve frontmatter."""
 from __future__ import annotations
 
 import shutil
@@ -8,7 +8,7 @@ from pathlib import Path
 import frontmatter
 
 from lib import paths
-from lib.archive_record import make_artifact, write_archive_record
+from lib.archive_record import make_artifact
 from lib.ids import archive_id
 from lib.logging import log_event
 from lib.protocol import CandidateRecord, Provenance
@@ -30,12 +30,14 @@ def ingest_path(path: Path) -> list[CandidateRecord]:
 
     clean_dir = paths.ARCHIVE_CLEAN / arc_id
     clean_dir.mkdir(parents=True, exist_ok=True)
-    dst = clean_dir / path.name
-    shutil.copy2(path, dst)
+    shutil.copy2(path, clean_dir / path.name)
 
     candidate = CandidateRecord(
         source_type="markdown",
         captured_via="watcher",
+        arc_id=arc_id,
+        seed=seed,
+        captured_at=captured_at,
         canonical_url=canonical_url,
         title=title,
         one_line_summary=summary,
@@ -47,8 +49,6 @@ def ingest_path(path: Path) -> list[CandidateRecord]:
         artifacts=[make_artifact(arc_id, "clean", path.name)],
         extra={"upstream_frontmatter": dict(post.metadata)} if post.metadata else {},
     )
-    written_id, record_path = write_archive_record(candidate, captured_at=captured_at, seed=seed)
-    assert written_id == arc_id
-    log_event("scribe.markdown", "archive_record.written",
-              arc_id=arc_id, source=str(path), record_path=str(record_path))
+    log_event("scribe.markdown", "staged",
+              arc_id=arc_id, source=str(path), title=title)
     return [candidate]

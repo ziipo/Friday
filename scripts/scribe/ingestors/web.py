@@ -1,12 +1,12 @@
-"""Web ingestor: .url file → ArchiveBox → archive_record.
+"""Web ingestor: .url file → ArchiveBox → staged artifacts.
 
 Workflow per PRD §5.1.7:
 1. Read URL from .url file (Windows-style INI or plain-text).
 2. Shell out to `archivebox add "$URL#$timestamp"` — fragment is the documented
    workaround for ArchiveBox's "one snapshot per URL" limitation.
-3. Locate the resulting snapshot folder under archivebox-data/archive/.
-4. Symlink/copy singlefile.html → Archive/Rendered/{arc_id}/, readability content → Archive/Clean/{arc_id}/.
-5. Write archive_record .md.
+3. Locate the resulting snapshot folder.
+4. Copy singlefile.html → Archive/Rendered/{arc_id}/, readability content → Archive/Clean/{arc_id}/.
+5. Return CandidateRecord; pipeline triages and writes the archive_record.
 """
 from __future__ import annotations
 
@@ -14,28 +14,26 @@ import configparser
 import json
 import shutil
 import subprocess
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from lib import paths
-from lib.archive_record import make_artifact, write_archive_record
+from lib.archive_record import make_artifact
+from lib.ids import archive_id
 from lib.logging import log_event
 from lib.protocol import CandidateRecord, Provenance
 
 source_type = "web"
-poll_interval_seconds = 0  # watcher mode only at this phase
+poll_interval_seconds = 0
 
 
 def _parse_url_file(path: Path) -> str:
-    """Accept both Windows .url (INI with [InternetShortcut] URL=...) and plain text."""
     text = path.read_text(encoding="utf-8", errors="replace").strip()
     if text.startswith("["):
         cp = configparser.ConfigParser(interpolation=None)
         cp.read_string(text)
         if cp.has_option("InternetShortcut", "URL"):
             return cp.get("InternetShortcut", "URL").strip()
-    # Plain text: first non-empty line that looks like a URL.
     for line in text.splitlines():
         line = line.strip()
         if line.startswith(("http://", "https://")):
@@ -50,7 +48,6 @@ def _list_snapshots() -> set[str]:
 
 
 def _run_archivebox_add(url: str) -> Path:
-    """Invoke `archivebox add` and return the new snapshot directory."""
     before = _list_snapshots()
     fragment = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
     target = f"{url}#{fragment}"
@@ -70,7 +67,6 @@ def _run_archivebox_add(url: str) -> Path:
     new = sorted(after - before)
     if not new:
         raise RuntimeError(f"archivebox produced no new snapshot for {url!r}")
-    # Most recent timestamp directory (numeric, sortable).
     snapshot_dir = paths.ARCHIVEBOX_ARCHIVE / new[-1]
     log_event("scribe.web", "archivebox.add.ok", url=url, snapshot=str(snapshot_dir))
     return snapshot_dir
@@ -81,25 +77,27 @@ def _read_title(snapshot_dir: Path) -> str | None:
     if not index.exists():
         return None
     try:
-        data = json.loads(index.read_text(encoding="utf-8"))
-        return data.get("title")
+        return json.loads(index.read_text(encoding="utf-8")).get("title")
     except json.JSONDecodeError:
         return None
 
 
-def ingest_path(path: Path) -> list[CandidateRecord]:
-    url = _parse_url_file(path)
+def ingest_url(
+    url: str,
+    *,
+    provenance: Provenance | None = None,
+    captured_via: str = "watcher",
+    extra: dict | None = None,
+) -> list[CandidateRecord]:
+    """Run a URL through ArchiveBox and stage artifacts. The pollers (Drive,
+    Slack, Calendar) call this directly when they encounter an external URL,
+    instead of writing a tempfile and routing through ingest_path."""
     snapshot_dir = _run_archivebox_add(url)
     title = _read_title(snapshot_dir)
 
     captured_at = datetime.now(timezone.utc)
-    seed = url + "#" + captured_at.isoformat()
-    arc_id_seed = url  # stable seed → reproducible short hash for same URL
-
-    # Stage artifacts under Archive/{Rendered,Clean}/{arc_id}/
-    # We compute arc_id ourselves so we can place files BEFORE writing the record.
-    from lib.ids import archive_id
-    arc_id = archive_id(arc_id_seed, captured_at)
+    seed = url
+    arc_id = archive_id(seed, captured_at)
 
     rendered_dir = paths.ARCHIVE_RENDERED / arc_id
     clean_dir = paths.ARCHIVE_CLEAN / arc_id
@@ -109,47 +107,51 @@ def ingest_path(path: Path) -> list[CandidateRecord]:
     artifacts = []
     singlefile = snapshot_dir / "singlefile.html"
     if singlefile.exists():
-        dst = rendered_dir / "singlefile.html"
-        shutil.copy2(singlefile, dst)
+        shutil.copy2(singlefile, rendered_dir / "singlefile.html")
         artifacts.append(make_artifact(arc_id, "rendered", "singlefile.html"))
-
     readability_html = snapshot_dir / "readability" / "content.html"
     readability_txt = snapshot_dir / "readability" / "content.txt"
     if readability_html.exists():
-        dst = clean_dir / "content.html"
-        shutil.copy2(readability_html, dst)
+        shutil.copy2(readability_html, clean_dir / "content.html")
         artifacts.append(make_artifact(arc_id, "clean", "content.html"))
     if readability_txt.exists():
-        dst = clean_dir / "content.txt"
-        shutil.copy2(readability_txt, dst)
+        shutil.copy2(readability_txt, clean_dir / "content.txt")
         artifacts.append(make_artifact(arc_id, "clean", "content.txt"))
-
     if not artifacts:
         raise RuntimeError(
-            f"archivebox snapshot {snapshot_dir} produced no usable artifacts "
-            f"(no singlefile.html or readability/content.{{html,txt}})"
+            f"archivebox snapshot {snapshot_dir} produced no usable artifacts"
         )
+
+    merged_extra = {"archivebox_snapshot": snapshot_dir.name}
+    if extra:
+        merged_extra.update(extra)
+    if provenance is None:
+        provenance = Provenance(shared_by="self", shared_at=captured_at)
 
     candidate = CandidateRecord(
         source_type="web",
-        captured_via="watcher",
+        captured_via=captured_via,
+        arc_id=arc_id,
+        seed=seed,
+        captured_at=captured_at,
         canonical_url=url,
         title=title,
+        provenance=provenance,
+        artifacts=artifacts,
+        extra=merged_extra,
+    )
+    log_event("scribe.web", "staged", arc_id=arc_id, url=url, captured_via=captured_via)
+    return [candidate]
+
+
+def ingest_path(path: Path) -> list[CandidateRecord]:
+    url = _parse_url_file(path)
+    return ingest_url(
+        url,
+        captured_via="watcher",
         provenance=Provenance(
             shared_by="self",
             context=f"manual capture via {path.name}",
-            shared_at=captured_at,
+            shared_at=datetime.now(timezone.utc),
         ),
-        artifacts=artifacts,
-        extra={"archivebox_snapshot": snapshot_dir.name},
     )
-    written_id, record_path = write_archive_record(
-        candidate, captured_at=captured_at, seed=arc_id_seed,
-    )
-    # The writer recomputes arc_id from (seed, captured_at). It must match the one
-    # we used to lay out the artifact dirs — assert equality so any drift is loud.
-    assert written_id == arc_id, f"arc_id drift: layout={arc_id} writer={written_id}"
-
-    log_event("scribe.web", "archive_record.written",
-              arc_id=arc_id, url=url, record_path=str(record_path))
-    return [candidate]
