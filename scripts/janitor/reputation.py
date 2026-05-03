@@ -53,8 +53,32 @@ def _score(counts: dict[str, int]) -> float:
     return (p + 1) / (p + a + d + 2)
 
 
+def _provenance_for_arc(arc_id: str) -> tuple[str, str]:
+    """Return (shared_in, shared_by) from the archive record, or ("", "")."""
+    if not arc_id:
+        return "", ""
+    arc_path = paths.ARCHIVE_RECORDS / f"{arc_id}.md"
+    if not arc_path.exists():
+        return "", ""
+    try:
+        import frontmatter as fm
+        post = fm.load(arc_path)
+        prov = post.metadata.get("provenance") or {}
+        if isinstance(prov, dict):
+            return str(prov.get("shared_in") or ""), str(prov.get("shared_by") or "")
+    except Exception:
+        pass
+    return "", ""
+
+
 def _read_today_outcomes() -> tuple[dict[str, dict], dict[str, dict]]:
-    """Parse pipeline log entries from today (UTC). Returns (channels, senders) tallies."""
+    """Parse pipeline log entries from today (UTC). Returns (channels, senders) tallies.
+
+    Strategy: pair `archive_record.written` entries (which carry arc_id + decision)
+    with provenance from the archive record files.  The older eval-harness entries
+    only have `triage.decision` without arc_id — those are skipped (no identity to
+    attribute to).
+    """
     channels: dict[str, dict[str, int]] = defaultdict(lambda: {"promoted": 0, "archived": 0, "discarded": 0})
     senders: dict[str, dict[str, int]] = defaultdict(lambda: {"promoted": 0, "archived": 0, "discarded": 0})
 
@@ -71,17 +95,15 @@ def _read_today_outcomes() -> tuple[dict[str, dict], dict[str, dict]]:
                 entry = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if entry.get("event") != "triage.decision":
+            if entry.get("event") != "archive_record.written":
                 continue
-            ts = entry.get("ts") or entry.get("timestamp") or ""
+            ts = entry.get("ts") or ""
             if not ts.startswith(today):
                 continue
 
+            arc_id: str = entry.get("arc_id") or ""
             decision: str = entry.get("decision") or ""
-            channel: str = str(entry.get("channel_rep") or entry.get("channel") or "")
-            sender: str = str(entry.get("sender") or entry.get("sender_rep") or "")
 
-            # Map decision to outcome bucket.
             if decision == "fast_track":
                 bucket = "promoted"
             elif decision == "archive_only":
@@ -91,6 +113,7 @@ def _read_today_outcomes() -> tuple[dict[str, dict], dict[str, dict]]:
             else:
                 continue
 
+            channel, sender = _provenance_for_arc(arc_id)
             if channel:
                 channels[channel][bucket] += 1
             if sender:
