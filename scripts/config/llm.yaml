@@ -1,0 +1,42 @@
+# LLM provider configuration.
+#
+# `active` is a priority-ordered list. At call time:
+#   1. Skip providers whose API key is missing from Keychain.
+#   2. Try the first remaining provider; on transient failure (auth, network, 5xx)
+#      fall back to the next. Don't fall back on bad-input 4xx errors — those
+#      mean our request is wrong, not the provider.
+#
+# Default order puts Anthropic first (PRD-aligned, zero-retention) and
+# OpenRouter as the fallback (test/dev, easier billing).
+
+active:
+  - anthropic
+  - openrouter
+
+providers:
+  anthropic:
+    backend: anthropic          # uses Anthropic SDK against api.anthropic.com
+    secret_name: llm.anthropic
+    base_url: null              # SDK default (api.anthropic.com)
+    default_model: claude-sonnet-4-6
+    extra_headers:
+      anthropic-beta: prompt-caching-2024-07-31
+
+  openrouter:
+    backend: openai             # OpenRouter exposes OpenAI-shaped chat/completions
+    secret_name: llm.openrouter
+    base_url: https://openrouter.ai/api/v1
+    # OpenRouter requires the provider prefix on model IDs.
+    default_model: anthropic/claude-sonnet-4-6
+    extra_headers:
+      HTTP-Referer: https://github.com/ziipo/Friday
+      X-Title: Friday
+
+# Per-job overrides (filled in as each component lands).
+jobs:
+  triage:
+    model: null                 # use provider default
+    max_tokens: 512
+  synthesis:
+    model: null
+    max_tokens: 4096
