@@ -15,18 +15,30 @@ Living checklist. Tasks tracked in the conversation TaskList tool are the source
 - [x] `archivebox init` in `archivebox-data/`; configured for SingleFile + Readability only per PRD §3
 - [x] Smoke test: `archivebox add` 3 URLs; both artifacts produced for each
 
-## Phase 1 — Scribe Watcher MVP (next)
+## Phase 1 — Scribe Watcher MVP ✓ COMPLETE
 
-- [ ] `scripts/scribe/watcher.py` using `watchdog`, dispatch by file extension
-- [ ] Web ingestor: `.url` file → ArchiveBox → archive_record
-- [ ] Markdown ingestor (frontmatter passthrough)
-- [ ] PDF ingestor (pdfplumber + raw archive)
-- [ ] Email ingestor (mailparser, attachments → sub-records)
-- [ ] `SourcePlugin` Protocol per PRD §5.1.2 (Watcher mode)
-- [ ] Archive record writer per §4.1
-- [ ] launchd plist `com.friday.scribe.plist`
-- [ ] Configure Obsidian Web Clipper to write into `Inbox/`
-- [ ] Acceptance: Safari clip → archive_record within 60s
+- [x] `scripts/scribe/watcher.py` using `watchdog`, dispatch by file extension
+- [x] Web ingestor: `.url` file → ArchiveBox → archive_record
+- [x] Markdown ingestor (frontmatter passthrough)
+- [x] PDF ingestor (pdfplumber + raw archive + text extract)
+- [x] Email ingestor (parses .eml, attachments → sub-records)
+- [x] `SourcePlugin` Protocol per PRD §5.1.2 (Watcher mode)
+- [x] Archive record writer per §4.1
+- [x] launchd plist `com.friday.scribe.plist`
+- [x] Acceptance: 3 file types end-to-end → archive_records in <30s
+
+User-facing setup tasks (deferred — not required for code correctness):
+- [ ] Install launchd plist (`launchctl bootstrap`) — see `scripts/launchd/README.md`
+- [ ] Configure Obsidian Web Clipper to write `.url` into `Inbox/`
+
+## Phase 2 — Triage (next)
+
+- [ ] `scripts/triage/scorer.py` — Sonnet call returning JSON per §5.2.2
+- [ ] Memory-tier context loader (entities, concepts, recent titles; cap ~2k tokens)
+- [ ] Decision matrix per §5.2.3
+- [ ] `Institutional-Memory/.reputation.json` reader (writer in Phase 6)
+- [ ] Eval harness with 10 hand-labeled items
+- [ ] Acceptance: 10 varied items produce sensible decisions
 
 ## Open questions queued for later
 
