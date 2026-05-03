@@ -20,6 +20,8 @@ If those paths differ on a future machine, edit the plist before loading.
 | `com.friday.promoter.plist` | Engagement-driven promoter | 5 | every 5 min |
 | `com.friday.janitor.nightly.plist` | Nightly maintenance sweep | 6 | 02:00 local |
 | `com.friday.janitor.weekly.plist` | Weekly demotion + prune sweep | 6 | Sunday 03:00 local |
+| `com.friday.trust_ratchet.plist` | Auto-apply graduated proposals | 7 | Sunday 03:30 local |
+| `com.friday.vault.weekly_tag.plist` | Git tag weekly snapshot | 7 | Friday 17:00 local |
 
 ## Install
 
@@ -36,7 +38,9 @@ for plist in com.friday.scribe.plist \
              com.friday.poller.slack.plist \
              com.friday.promoter.plist \
              com.friday.janitor.nightly.plist \
-             com.friday.janitor.weekly.plist; do
+             com.friday.janitor.weekly.plist \
+             com.friday.trust_ratchet.plist \
+             com.friday.vault.weekly_tag.plist; do
     ln -sfn "$PLIST_DIR/$plist" "$LAUNCH_AGENTS/$plist"
     launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS/$plist"
 done
