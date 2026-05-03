@@ -29,15 +29,16 @@ import yaml
 
 from lib import llm, paths, poller_state
 from lib.logging import log_event
+from lib.tuning import get as _tune
 
 from . import index as index_mod
 from . import reputation as rep_mod
 from .recapture import recapture_all
 
-STALE_DAYS = 30
-DEAD_LINK_GRACE_DAYS = 7
-CONFLICT_LOOKBACK_DAYS = 3  # sources promoted in the last N days get conflict-scanned
-CONFLICT_CONTEXT_SOURCES = 10  # how many existing sources to include in LLM context
+STALE_DAYS: int = int(_tune("janitor", "stale_days", 30))
+DEAD_LINK_GRACE_DAYS: int = int(_tune("janitor", "dead_link_grace_days", 7))
+CONFLICT_LOOKBACK_DAYS: int = int(_tune("janitor", "conflict_lookback_days", 3))
+CONFLICT_CONTEXT_SOURCES: int = int(_tune("janitor", "conflict_context_sources", 10))
 
 
 # ---------------------------------------------------------------------------

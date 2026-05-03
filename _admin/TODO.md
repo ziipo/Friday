@@ -100,18 +100,33 @@ User-facing setup tasks:
 User-facing setup tasks:
 - [ ] Install and bootstrap `com.friday.janitor.nightly.plist` and `com.friday.janitor.weekly.plist`
 
-## Phase 7 — Trust ratchet (next)
+## Phase 7 — Trust Ratchet + Tuning + Vault ✓ COMPLETE
 
-From PRD §9 — defer until the relevant phase:
+- [x] `scripts/config/tuning.yaml` — all PRD §9 thresholds (triage floors, janitor windows, weekly ages, trust ratchet params)
+- [x] `scripts/lib/tuning.py` — `load()` (LRU-cached, deep-merge with `.local.yaml`), `get(section, key, default)` helper
+- [x] `scripts/triage/decide.py` — LOW_FLOOR / HIGH_FLOOR now read from tuning at module load
+- [x] `scripts/janitor/nightly.py` — STALE_DAYS, DEAD_LINK_GRACE_DAYS, CONFLICT_LOOKBACK_DAYS, CONFLICT_CONTEXT_SOURCES now read from tuning
+- [x] `scripts/janitor/weekly.py` — DEMOTION_AGE_DAYS, PRUNE_AGE_DAYS, PRUNE_MAX_RELEVANCE, TRUST_AUTO_APPLY_THRESHOLD, TRUST_MIN_SAMPLES, TRUST_WINDOW_DAYS now read from tuning
+- [x] `scripts/trust_ratchet/__init__.py` + `apply.py` — PRD §5.5.3 auto-apply logic; `--review-all` paranoid mode, `--dry-run`, `--status` CLI
+- [x] `scripts/launchd/com.friday.trust_ratchet.plist` — Sunday 03:30 (after weekly sweep)
+- [x] Vault: `_vault_commit()` in `watcher.py` — `git add -A` + `git commit` after each successful ingest (PRD §5.6)
+- [x] `scripts/launchd/com.friday.vault.weekly_tag.plist` — Friday 17:00 `git tag weekly-{year}-W{week}`
+- [x] 57 total tests passing (16 new Phase 7 tests; 41 Phase 6 tests preserved)
+- [x] `conftest.py` — autouse fixture clears tuning LRU cache and pins `_CONFIG` to real path for all tests
+
+User-facing setup tasks:
+- [ ] Install and bootstrap `com.friday.trust_ratchet.plist` and `com.friday.vault.weekly_tag.plist`
+
+## Open tuning questions (PRD §9 — for future calibration)
 
 - [ ] Pandoc vs Python Markdown library (Phase 1, web ingestor)
 - [ ] Obsidian Web Clipper write target — `Inbox/` directly vs staging (Phase 1)
 - [ ] Slack poller granularity: per-message vs per-thread digest (Phase 4)
 - [ ] Calendar attendance heuristic refinement (Phase 4)
-- [ ] Drive view-duration threshold (Phase 5, default 60s)
+- [ ] Drive view-duration threshold (Phase 5, default 60s — adjust in `tuning.yaml`)
 - [ ] Reputation cold start (Phase 2; default uniform 0.5)
-- [ ] Demotion sensitivity (Phase 6)
-- [ ] Triage relevance threshold 0.7 — tune in Phase 2 with held-out set
+- [ ] Demotion sensitivity (Phase 6 — adjust `weekly.demotion_age_days` in `tuning.yaml`)
+- [ ] Triage relevance threshold 0.7 — tune in Phase 2 with held-out set (adjust `triage.high_floor`)
 
 ## Known issues / quirks
 

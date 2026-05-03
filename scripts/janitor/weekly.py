@@ -26,17 +26,18 @@ import yaml
 
 from lib import paths
 from lib.logging import log_event
+from lib.tuning import get as _tune
 
 from . import index as index_mod
 
-DEMOTION_AGE_DAYS = 90
-PRUNE_AGE_DAYS = 365
-PRUNE_MAX_RELEVANCE = 0.3
+DEMOTION_AGE_DAYS: int = int(_tune("weekly", "demotion_age_days", 90))
+PRUNE_AGE_DAYS: int = int(_tune("weekly", "prune_age_days", 365))
+PRUNE_MAX_RELEVANCE: float = float(_tune("weekly", "prune_max_relevance", 0.3))
 
 TRUST_STATS_PATH = paths.INSTITUTIONAL_MEMORY / ".trust-stats.json"
-TRUST_AUTO_APPLY_THRESHOLD = 0.95
-TRUST_MIN_SAMPLES = 20
-TRUST_WINDOW_DAYS = 30
+TRUST_AUTO_APPLY_THRESHOLD: float = float(_tune("trust_ratchet", "auto_apply_threshold", 0.95))
+TRUST_MIN_SAMPLES: int = int(_tune("trust_ratchet", "min_samples", 20))
+TRUST_WINDOW_DAYS: int = int(_tune("trust_ratchet", "window_days", 30))
 
 
 # ---------------------------------------------------------------------------

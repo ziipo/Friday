@@ -1,0 +1,37 @@
+# Friday — tunable thresholds (PRD §9 open questions).
+# Edit here to adjust system behaviour. Local overrides → tuning.local.yaml (gitignored).
+
+triage:
+  # Relevance score below which an item is discarded outright.
+  low_floor: 0.2
+  # Relevance score at or above which an item is fast-tracked to Memory.
+  high_floor: 0.7
+
+janitor:
+  # Memory-tier sources not re-captured in this many days → mark stale.
+  stale_days: 30
+  # A URL must fail for this many consecutive days before being marked dead-link.
+  dead_link_grace_days: 7
+  # Sources promoted within this window are scanned for conflicts.
+  conflict_lookback_days: 3
+  # How many existing source summaries to include in the conflict-detection prompt.
+  conflict_context_sources: 10
+  # Drive view duration (seconds) that constitutes engagement. Placeholder — the
+  # Drive Activity API does not expose duration; left here for Phase 7+ tuning.
+  drive_view_duration_seconds: 60
+
+weekly:
+  # Memory records older than this (days) are candidates for demotion.
+  demotion_age_days: 90
+  # Archive records older than this (days) with low relevance are candidates for pruning.
+  prune_age_days: 365
+  # Relevance score ceiling for archive pruning candidates.
+  prune_max_relevance: 0.3
+
+trust_ratchet:
+  # Minimum ratio of user_kept / proposed for a category to graduate.
+  auto_apply_threshold: 0.95
+  # Minimum number of samples (kept + proposed) required before graduation.
+  min_samples: 20
+  # Rolling window (days) over which samples are counted.
+  window_days: 30

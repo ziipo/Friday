@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.friday.vault.weekly_tag</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>
+            TAG="weekly-$(date +%Y)-W$(date +%V)" &amp;&amp;
+            git -C /Users/kenburleson/Projects/Friday tag -f "$TAG" &amp;&amp;
+            echo "Tagged $TAG"
+        </string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/Users/kenburleson/.local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kenburleson/Projects/Friday</string>
+
+    <!-- Friday 17:00 local (PRD §5.6) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>5</integer>
+        <key>Hour</key>
+        <integer>17</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kenburleson/Projects/Friday/.logs/vault.weekly_tag.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/kenburleson/Projects/Friday/.logs/vault.weekly_tag.stderr.log</string>
+</dict>
+</plist>

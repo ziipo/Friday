@@ -2,6 +2,25 @@
 
 Reverse-chronological. One entry per session or major milestone.
 
+## 2026-05-03 — Phase 7 complete
+
+Trust Ratchet, Tuning config, and Vault delivered.
+
+- ✅ `scripts/config/tuning.yaml` — single authoritative file for all PRD §9 thresholds. Supports a `.local.yaml` deep-merge override (gitignored) for per-machine experiments without touching committed defaults.
+- ✅ `scripts/lib/tuning.py` — `load()` (LRU-cached YAML loader with optional local override merge) + `get(section, key, default)` helper. Cache is cleared by `conftest.py` between tests.
+- ✅ Wired tuning into `triage/decide.py` (LOW_FLOOR/HIGH_FLOOR), `janitor/nightly.py` (staleness, link-rot, conflict windows), and `janitor/weekly.py` (demotion age, pruning age/relevance, trust ratchet thresholds).
+- ✅ `scripts/trust_ratchet/apply.py` — PRD §5.5.3 auto-apply. Reads `.trust-stats.json` (written by `janitor/weekly.py`), moves graduated proposals from `ReviewQueue/pending/` → `ReviewQueue/approved/`. Paranoid `--review-all` flag leaves everything in pending for human review. Collision-safe rename when `approved/` already contains a matching filename.
+- ✅ `scripts/launchd/com.friday.trust_ratchet.plist` — Sunday 03:30 local (30 min after weekly sweep).
+- ✅ Vault commit hook in `scribe/watcher.py` (`_vault_commit()`): after each successful ingest, runs `git -C FRIDAY_ROOT add -A` + `git commit -m "ingest: {filename} [{ts}]"`. Skips commit if nothing staged; logs CalledProcessError without raising (so a misconfigured git repo can't break ingestion).
+- ✅ `scripts/launchd/com.friday.vault.weekly_tag.plist` — Friday 17:00 local, runs `git tag -f weekly-{YYYY}-W{WW}` (PRD §5.6).
+- ✅ `scripts/tests/conftest.py` — `autouse` fixture that clears the tuning LRU cache and pins `_CONFIG` to the real path before/after every test. Prevents module-level constant import ordering from poisoning tests that monkey-patch `FRIDAY_ROOT`.
+- ✅ 57 total tests passing (16 new Phase 7; 41 Phase 6 preserved).
+
+Notable design calls:
+- Module-level constants wired from `tuning.get()` are evaluated once at first import, so tests must not rely on re-importing a module after patching `FRIDAY_ROOT`. The conftest fixture addresses this by keeping the real `_CONFIG` path stable across all tests; any test that needs a local override patches `tuning._CONFIG` and `tuning._LOCAL` directly (as `TestTuningLoader.test_local_override_deep_merges` demonstrates).
+- `_vault_commit()` uses `git diff --cached --quiet` exit code to detect whether anything was staged, rather than parsing stdout, which avoids locale/encoding edge cases.
+- Weekly tag uses `git tag -f` (force) so re-running the tagger on the same Friday (e.g., after a launchd retry) doesn't fail with "tag already exists".
+
 ## 2026-05-03 — Phase 6 complete
 
 Janitor delivered in four focused modules.

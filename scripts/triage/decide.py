@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from lib.tuning import get as _tune
+
 
 class Decision(str, Enum):
     DISCARD = "discard"                 # spam or below relevance floor
@@ -17,9 +19,9 @@ class Decision(str, Enum):
     FAST_TRACK = "fast_track"           # archive AND queue for memory promotion
 
 
-# PRD §5.2.3 thresholds.
-LOW_FLOOR = 0.2
-HIGH_FLOOR = 0.7
+# PRD §5.2.3 thresholds — read from tuning.yaml, fall back to PRD defaults.
+LOW_FLOOR: float = _tune("triage", "low_floor", 0.2)
+HIGH_FLOOR: float = _tune("triage", "high_floor", 0.7)
 
 
 @dataclass(frozen=True)

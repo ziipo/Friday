@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -76,6 +77,32 @@ def _move_with_collision_safety(src: Path, dst_dir: Path) -> Path:
     return deduped
 
 
+def _vault_commit(source_name: str) -> None:
+    """Stage all Friday repo changes and create an ingest commit (PRD §5.6)."""
+    repo = paths.FRIDAY_ROOT
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        subprocess.run(
+            ["git", "-C", str(repo), "add", "-A"],
+            check=True, capture_output=True,
+        )
+        result = subprocess.run(
+            ["git", "-C", str(repo), "diff", "--cached", "--quiet"],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return  # nothing staged
+        subprocess.run(
+            ["git", "-C", str(repo), "commit", "-m",
+             f"ingest: {source_name} [{ts}]"],
+            check=True, capture_output=True,
+        )
+        log_event("scribe.watcher", "vault.commit", source=source_name, ts=ts)
+    except subprocess.CalledProcessError as exc:
+        log_event("scribe.watcher", "vault.commit_error",
+                  source=source_name, error=exc.stderr.decode(errors="replace").strip())
+
+
 def process_file(path: Path, ingestors: dict[str, Callable]) -> None:
     from scribe.pipeline import process_candidates
 
@@ -106,6 +133,7 @@ def process_file(path: Path, ingestors: dict[str, Callable]) -> None:
     moved = _move_with_collision_safety(path, paths.INBOX_PROCESSED)
     log_event("scribe.watcher", "ingest.ok",
               path=str(path), moved_to=str(moved), candidates=len(candidates))
+    _vault_commit(path.name)
 
 
 class InboxHandler(FileSystemEventHandler):
