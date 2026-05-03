@@ -2,6 +2,22 @@
 
 Reverse-chronological. One entry per session or major milestone.
 
+## 2026-05-03 — Phase 6 complete
+
+Janitor delivered in four focused modules.
+
+- ✅ `recapture.py` — re-runs ArchiveBox on web sources, appends timestamped `singlefile_{ts}.html` and `readability_{ts}.txt` artifacts to the existing arc_id directories, diffs against the previous clean artifact, LLM-classifies (trivial/notable/breaking), and writes ReviewQueue proposals for notable/breaking changes. Updates `last_verified` and `artifacts` list on the memory record.
+- ✅ `reputation.py` — reads today's `scribe.pipeline.jsonl` entries, tallies fast_track→promoted / archive_only→archived / discard→discarded per channel and sender, updates `.reputation.json` with a Laplace-smoothed score. This activates the writer path that Phase 2 (Triage) left read-only.
+- ✅ `index.py` — rebuilds `index.md` as a full Markdown table (sources, entities, concepts) and appends datestamped summaries to `log.md`.
+- ✅ `nightly.py` — all 8 PRD §5.5.1 steps. Staleness check skips re-capturable sources (they get last_verified updated by recapture). Link rot check persists `dead_since` timestamps in poller state so the 7-day grace period survives restarts. Conflict detection sends the last N existing source summaries to the LLM alongside each recent promotion. Dry-run verified against live data (2 sources, 4 entities, 4 concepts).
+- ✅ `weekly.py` — demotion pass checks promoted > 90 days ago with no inbound links and no synthesis appearances; pruning pass targets archived > 365 days with relevance < 0.3; trust ratchet evaluates approved vs. pending proposals per type against the 0.95/N>20 threshold and persists `.trust-stats.json`.
+- ✅ Two launchd plists using `StartCalendarInterval` (not `StartInterval`) for calendar-based scheduling.
+
+Notable design calls:
+- Watermark for link-rot dead_since is stored in poller_state (reuses the same JSON cursor mechanism as the pollers) rather than a separate file, keeping the persistence pattern consistent.
+- Conflict detection sends only the last `CONFLICT_CONTEXT_SOURCES` summaries as context rather than all notes, keeping the prompt token budget bounded as the Memory tier grows.
+- Weekly trust ratchet evaluates the sliding 30-day window on every run; the actual auto-apply behavior lives in Phase 7.
+
 ## 2026-05-03 — Phase 5 complete
 
 Promoter delivered as three focused modules.

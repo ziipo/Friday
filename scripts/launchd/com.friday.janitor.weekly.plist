@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.friday.janitor.weekly</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/kenburleson/.local/bin/uv</string>
+        <string>run</string>
+        <string>--project</string>
+        <string>/Users/kenburleson/Projects/Friday</string>
+        <string>python</string>
+        <string>-m</string>
+        <string>janitor.weekly</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONPATH</key>
+        <string>/Users/kenburleson/Projects/Friday/scripts</string>
+        <key>FRIDAY_ROOT</key>
+        <string>/Users/kenburleson/Projects/Friday</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/Users/kenburleson/.local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kenburleson/Projects/Friday</string>
+
+    <!-- Sunday 03:00 local -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kenburleson/Projects/Friday/.logs/janitor.weekly.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/kenburleson/Projects/Friday/.logs/janitor.weekly.stderr.log</string>
+</dict>
+</plist>

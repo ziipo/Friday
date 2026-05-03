@@ -18,6 +18,8 @@ If those paths differ on a future machine, edit the plist before loading.
 | `com.friday.poller.drive.plist` | Google Drive poller | 4 | every 30 min |
 | `com.friday.poller.slack.plist` | Slack poller | 4 | every 15 min |
 | `com.friday.promoter.plist` | Engagement-driven promoter | 5 | every 5 min |
+| `com.friday.janitor.nightly.plist` | Nightly maintenance sweep | 6 | 02:00 local |
+| `com.friday.janitor.weekly.plist` | Weekly demotion + prune sweep | 6 | Sunday 03:00 local |
 
 ## Install
 
@@ -32,7 +34,9 @@ for plist in com.friday.scribe.plist \
              com.friday.poller.calendar.plist \
              com.friday.poller.drive.plist \
              com.friday.poller.slack.plist \
-             com.friday.promoter.plist; do
+             com.friday.promoter.plist \
+             com.friday.janitor.nightly.plist \
+             com.friday.janitor.weekly.plist; do
     ln -sfn "$PLIST_DIR/$plist" "$LAUNCH_AGENTS/$plist"
     launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS/$plist"
 done

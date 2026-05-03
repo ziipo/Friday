@@ -87,7 +87,20 @@ User-facing setup tasks (deferred — not required for code correctness):
 User-facing setup tasks:
 - [ ] Install and bootstrap `com.friday.promoter.plist`
 
-## Phase 6 — Janitor (next)
+## Phase 6 — Janitor ✓ COMPLETE
+
+- [x] `scripts/janitor/recapture.py` — re-fetch web sources via ArchiveBox, copy timestamped artifacts, LLM diff classification (trivial/notable/breaking), ReviewQueue proposals for notable/breaking changes
+- [x] `scripts/janitor/reputation.py` — reads pipeline JSONL log, tallies promote/archive/discard outcomes per channel/sender, updates `.reputation.json` with Laplace-smoothed scores (Phase 2 was read-only; this is the writer)
+- [x] `scripts/janitor/index.py` — rebuilds `Institutional-Memory/index.md` master catalog; appends datestamped entries to `log.md`
+- [x] `scripts/janitor/nightly.py` — orchestrates all 8 PRD §5.5.1 steps: re-capture, diff, staleness, link rot, conflict detection, reputation update, index rebuild, log append
+- [x] `scripts/janitor/weekly.py` — PRD §5.5.2: memory demotion proposals (never auto-demotes in v1), archive pruning proposals (tombstone + artifact size report), trust ratchet evaluation
+- [x] `scripts/launchd/com.friday.janitor.nightly.plist` — 02:00 local via StartCalendarInterval
+- [x] `scripts/launchd/com.friday.janitor.weekly.plist` — Sunday 03:00 local
+
+User-facing setup tasks:
+- [ ] Install and bootstrap `com.friday.janitor.nightly.plist` and `com.friday.janitor.weekly.plist`
+
+## Phase 7 — Trust ratchet (next)
 
 From PRD §9 — defer until the relevant phase:
 
