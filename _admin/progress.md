@@ -2,6 +2,20 @@
 
 Reverse-chronological. One entry per session or major milestone.
 
+## 2026-05-03 — Phase 5 complete
+
+Promoter delivered as three focused modules.
+
+- ✅ `matcher.py` — builds an LRU-cached reverse index (url→arc_id, gdrive_file_id→arc_id, slack_file_id→arc_id) so engagement signals from any poller can be resolved to the archive record they concern. `invalidate_index()` is called after any write so the next lookup reflects new records.
+- ✅ `trigger.py` — `should_promote()` implements both PRD §5.3.1 paths: engagement (any qualifying signal fires) and relevance (FAST_TRACK / relevance_score ≥ 0.7). `engagement_tag()` classifies signals into passing/reviewed/studied per §5.3.4 rules (calendar_attendance only counts for small/medium meetings; large meeting → reviewed weight).
+- ✅ `promoter.py` — watermarked EngagementLog scan (incremental; watermark advances to `now` not `latest_ts` to avoid infinite retries on bad signals). Updates `engagement_score` on archive records whenever signals improve the score. Calls `synthesize_archive()` with the right reason and engagement tag. FAST_TRACK sweep runs each cycle to catch relevance-path records that have no engagement signals.
+- ✅ `com.friday.promoter.plist` — every 5 min via StartInterval; `--once` per invocation, exits cleanly.
+
+Notable design calls:
+- Watermark advances to `now`, not to the last signal timestamp. This means a signal that lands in the log after the cycle starts is processed next cycle, but a burst of unresolvable signals (e.g. from a poller whose records haven't been indexed yet) won't cause the watermark to stall and replay the same signals forever.
+- engagement_score is a simple additive float (studied=1.0, reviewed=0.4, others=0.1) capped at 1.0. No PRD spec for the exact formula; this is pragmatic and revisable with real data.
+- FAST_TRACK records are swept every cycle until promoted — idempotent because `should_promote()` checks `status == "promoted"` first.
+
 ## 2026-05-03 — Phase 4 complete
 
 Three pollers delivered (Calendar, Drive, Slack) plus the shared infrastructure they depend on.

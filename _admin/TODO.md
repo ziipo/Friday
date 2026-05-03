@@ -77,7 +77,17 @@ User-facing setup tasks (deferred — not required for code correctness):
 - [ ] Set `drive.designated_folder_id` in `pollers.local.yaml`
 - [ ] Allowlist desired Slack channel IDs in `pollers.local.yaml`
 
-## Phase 5 — Promoter (next)
+## Phase 5 — Promoter ✓ COMPLETE
+
+- [x] `scripts/promoter/matcher.py` — resolves engagement signals to arc_ids via target_id, canonical_url, gdrive_file_id, slack_file_id; LRU-cached index with `invalidate_index()` after writes
+- [x] `scripts/promoter/trigger.py` — `should_promote()` applies PRD §5.3.1 logic (engagement path + relevance/FAST_TRACK path); `engagement_tag()` returns passing/reviewed/studied per §5.3.4
+- [x] `scripts/promoter/promoter.py` — watermarked EngagementLog scan, engagement_score update, synthesize_archive() invocation, `--dry-run` mode
+- [x] `scripts/launchd/com.friday.promoter.plist` — every 5 min cadence
+
+User-facing setup tasks:
+- [ ] Install and bootstrap `com.friday.promoter.plist`
+
+## Phase 6 — Janitor (next)
 
 From PRD §9 — defer until the relevant phase:
 

@@ -17,6 +17,7 @@ If those paths differ on a future machine, edit the plist before loading.
 | `com.friday.poller.calendar.plist` | Google Calendar poller | 4 | every 60 min |
 | `com.friday.poller.drive.plist` | Google Drive poller | 4 | every 30 min |
 | `com.friday.poller.slack.plist` | Slack poller | 4 | every 15 min |
+| `com.friday.promoter.plist` | Engagement-driven promoter | 5 | every 5 min |
 
 ## Install
 
@@ -30,7 +31,8 @@ PLIST_DIR=/Users/kenburleson/Projects/Friday/scripts/launchd
 for plist in com.friday.scribe.plist \
              com.friday.poller.calendar.plist \
              com.friday.poller.drive.plist \
-             com.friday.poller.slack.plist; do
+             com.friday.poller.slack.plist \
+             com.friday.promoter.plist; do
     ln -sfn "$PLIST_DIR/$plist" "$LAUNCH_AGENTS/$plist"
     launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS/$plist"
 done
